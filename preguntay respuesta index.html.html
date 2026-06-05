@@ -13,7 +13,7 @@
         }
 
         body {
-            /* FONDO CON LA IMAGEN SOLICITADA Y UNA CAPA OSCURA */
+            /* FONDO CON LA IMAGEN Y UNA CAPA OSCURA DEGRADADA */
             background: linear-gradient(rgba(15, 23, 42, 0.85), rgba(15, 23, 42, 0.85)), 
                         url('image_6ebc44.jpg') no-repeat center center fixed;
             background-size: cover;
@@ -26,8 +26,8 @@
         }
 
         .card {
-            background-color: rgba(30, 41, 59, 0.95); /* Un poco transparente para lucir el fondo */
-            backdrop-filter: blur(5px); /* Efecto difuminado moderno */
+            background-color: rgba(30, 41, 59, 0.95);
+            backdrop-filter: blur(5px);
             padding: 30px;
             border-radius: 16px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
@@ -105,8 +105,14 @@
             transition: background-color 0.2s;
         }
 
-        .submit-btn:hover {
+        .submit-btn:hover:not(:disabled) {
             background-color: #7dd3fc;
+        }
+
+        .submit-btn:disabled {
+            background-color: #475569;
+            color: #94a3b8;
+            cursor: not-allowed;
         }
 
         /* Pantalla de agradecimiento */
@@ -221,13 +227,11 @@
 
     <div class="card">
         
-        <!-- SECCIÓN DE LA PREGUNTA -->
         <div class="question-section">
             <h2>❓ ¿Qué se les dificulta del estudio?</h2>
             <p class="subtitle">Tu respuesta nos ayudará a mejorar. Sé lo más sincero posible.</p>
         </div>
 
-        <!-- Formulario de envío -->
         <div id="survey-form">
             <div class="input-group">
                 <label for="voter-name-input">Nombre o Apodo (Opcional):</label>
@@ -239,10 +243,9 @@
                 <textarea id="voter-text-input" placeholder="Cuéntanos en detalle qué es lo que más te cuesta (el tiempo, la concentración, alguna materia...)"></textarea>
             </div>
             
-            <button class="submit-btn" onclick="submitResponse()">Enviar Respuesta</button>
+            <button id="send-btn" class="submit-btn" onclick="submitResponse()">Enviar Respuesta</button>
         </div>
 
-        <!-- Pantalla de Éxito al enviar -->
         <div id="thank-you-screen" class="thank-you-screen">
             <h3>¡Respuesta recibida!</h3>
             <p>Muchas gracias por compartir tus dificultades con nosotros.</p>
@@ -250,10 +253,8 @@
         </div>
     </div>
 
-    <!-- Acceso Administrador -->
     <button class="admin-trigger-btn" onclick="accessAdminPanel()">🔒 Panel de Administrador</button>
 
-    <!-- PANEL DE RESPUESTAS -->
     <div id="admin-panel" class="admin-panel">
         <h3>
             <span>Respuestas Recibidas (<span id="total-responses-count">0</span>)</span>
@@ -261,7 +262,7 @@
         </h3>
         
         <div id="responses-container" class="responses-container">
-            <!-- Las respuestas se cargarán aquí -->
+            <p style='color:#64748b; text-align:center; padding: 20px;'>Cargando respuestas de la nube...</p>
         </div>
 
         <button class="btn-secondary" style="color: #ef4444; border-color: #991b1b; margin-top: 20px; width: 100%;" onclick="clearAllData()">Borrar todas las respuestas</button>
@@ -269,12 +270,42 @@
 
     <script>
         const ADMIN_PASSWORD = "admin123";
+        // Servidor en la nube público y gratuito para almacenar tus encuestas de forma compartida
+        const BIN_URL = "https://api.jsonbin.io/v3/b/6660dc7ae41b4d34e40003b6"; 
 
-        let surveyData = JSON.parse(localStorage.getItem('surveyData')) || [];
+        async function getCloudData() {
+            try {
+                let response = await fetch(`${BIN_URL}/latest`, {
+                    headers: { "X-Master-Key": "$2a$10$W2vHwO2b5T7NfWv9FkW7g.D0v6N6U0B6R2/T6M1I4XpE5Z6G6qGe2" } // Llave de acceso pública temporal
+                });
+                let data = await response.json();
+                return data.record.surveyData || [];
+            } catch (error) {
+                console.error("Error cargando datos:", error);
+                return [];
+            }
+        }
 
-        function submitResponse() {
+        async function saveCloudData(newData) {
+            try {
+                await fetch(BIN_URL, {
+                    method: 'PUT',
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-Master-Key": "$2a$10$W2vHwO2b5T7NfWv9FkW7g.D0v6N6U0B6R2/T6M1I4XpE5Z6G6qGe2"
+                    },
+                    body: JSON.stringify({ surveyData: newData })
+                });
+            } catch (error) {
+                console.error("Error guardando datos:", error);
+                alert("Hubo un error al conectar con el servidor. Inténtalo de nuevo.");
+            }
+        }
+
+        async function submitResponse() {
             const nameInput = document.getElementById('voter-name-input');
             const textInput = document.getElementById('voter-text-input');
+            const sendBtn = document.getElementById('send-btn');
 
             const userName = nameInput.value.trim() || "Anónimo";
             const userText = textInput.value.trim();
@@ -284,6 +315,12 @@
                 return;
             }
 
+            sendBtn.disabled = true;
+            sendBtn.innerText = "Enviando a la nube...";
+
+            // Traer lo que ya respondieron otros alumnos, sumar la nueva respuesta y reenviar a la nube
+            let surveyData = await getCloudData();
+            
             const newResponse = {
                 name: userName,
                 text: userText,
@@ -291,10 +328,12 @@
             };
 
             surveyData.push(newResponse);
-            localStorage.setItem('surveyData', JSON.stringify(surveyData));
+            await saveCloudData(surveyData);
 
             nameInput.value = "";
             textInput.value = "";
+            sendBtn.disabled = false;
+            sendBtn.innerText = "Enviar Respuesta";
 
             document.getElementById('survey-form').style.display = 'none';
             document.getElementById('thank-you-screen').style.display = 'block';
@@ -305,22 +344,25 @@
             document.getElementById('survey-form').style.display = 'block';
         }
 
-        function accessAdminPanel() {
+        async function accessAdminPanel() {
             const passwordEntered = prompt("Introduce la contraseña de administrador para leer las respuestas:");
             
             if (passwordEntered === ADMIN_PASSWORD) {
-                updateAdminPanelList();
                 document.getElementById('admin-panel').style.display = 'block';
                 document.getElementById('admin-panel').scrollIntoView({ behavior: 'smooth' });
+                await updateAdminPanelList();
             } else if (passwordEntered !== null) {
                 alert("Contraseña incorrecta. Acceso denegado.");
             }
         }
 
-        function updateAdminPanelList() {
+        async function updateAdminPanelList() {
             const container = document.getElementById('responses-container');
             const countContainer = document.getElementById('total-responses-count');
             
+            container.innerHTML = "<p style='color:#64748b; text-align:center; padding: 20px;'>Actualizando lista...</p>";
+            
+            let surveyData = await getCloudData();
             container.innerHTML = "";
             countContainer.innerText = surveyData.length;
 
@@ -349,12 +391,11 @@
             document.getElementById('admin-panel').style.display = 'none';
         }
 
-        function clearAllData() {
-            if (confirm("¿Estás seguro de que deseas borrar permanentemente TODAS las respuestas leídas?")) {
-                localStorage.removeItem('surveyData');
-                surveyData = [];
-                updateAdminPanelList();
-                alert("Respuestas eliminadas.");
+        async function clearAllData() {
+            if (confirm("¿Estás seguro de que deseas borrar permanentemente TODAS las respuestas del servidor en la nube?")) {
+                await saveCloudData([]);
+                await updateAdminPanelList();
+                alert("Respuestas eliminadas del servidor.");
                 closeAdminPanel();
                 showFormScreen();
             }
