@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buzón de Consultas - Estudio</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            /* FONDO CON LA IMAGEN SOLICITADA Y UNA CAPA OSCURA */
+            background: linear-gradient(rgba(15, 23, 42, 0.85), rgba(15, 23, 42, 0.85)), 
+                        url('image_6ebc44.jpg') no-repeat center center fixed;
+            background-size: cover;
+            color: #f8fafc;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .card {
+            background-color: rgba(30, 41, 59, 0.95); /* Un poco transparente para lucir el fondo */
+            backdrop-filter: blur(5px); /* Efecto difuminado moderno */
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            width: 100%;
+            max-width: 600px;
+            margin-bottom: 25px;
+        }
+
+        /* SECCIÓN EXCLUSIVA PARA LA PREGUNTA */
+        .question-section {
+            background-color: rgba(15, 23, 42, 0.8);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #334155;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+
+        .question-section h2 {
+            font-size: 1.6rem;
+            color: #38bdf8;
+            margin-bottom: 8px;
+        }
+
+        .question-section .subtitle {
+            color: #94a3b8;
+            font-size: 0.95rem;
+        }
+
+        /* ZONA DE FORMULARIO */
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #94a3b8;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 12px;
+            background-color: #334155;
+            border: 2px solid #475569;
+            border-radius: 8px;
+            color: #f8fafc;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input[type="text"]:focus, textarea:focus {
+            border-color: #38bdf8;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 120px;
+            font-family: inherit;
+        }
+
+        .submit-btn {
+            background-color: #38bdf8;
+            color: #0f172a;
+            border: none;
+            padding: 14px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: bold;
+            width: 100%;
+            transition: background-color 0.2s;
+        }
+
+        .submit-btn:hover {
+            background-color: #7dd3fc;
+        }
+
+        /* Pantalla de agradecimiento */
+        .thank-you-screen {
+            display: none;
+            text-align: center;
+            padding: 20px 0;
+        }
+
+        .thank-you-screen h3 {
+            color: #4ade80;
+            font-size: 1.4rem;
+            margin-bottom: 10px;
+        }
+
+        .btn-secondary {
+            margin-top: 20px;
+            background-color: transparent;
+            color: #94a3b8;
+            border: 1px solid #475569;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+
+        .btn-secondary:hover {
+            background-color: #334155;
+            color: #f8fafc;
+        }
+
+        .admin-trigger-btn {
+            background-color: #1e293b;
+            color: #94a3b8;
+            border: 1px solid #475569;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+            margin-top: 10px;
+        }
+
+        .admin-trigger-btn:hover {
+            color: #38bdf8;
+            background-color: #334155;
+        }
+
+        /* Panel de administración */
+        .admin-panel {
+            display: none; 
+            background-color: rgba(30, 41, 59, 0.95);
+            backdrop-filter: blur(5px);
+            padding: 25px;
+            border-radius: 16px;
+            border: 2px solid #38bdf8;
+            width: 100%;
+            max-width: 600px;
+            box-shadow: 0 10px 25px rgba(56, 189, 248, 0.1);
+        }
+
+        .admin-panel h3 {
+            font-size: 1.2rem;
+            color: #38bdf8;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #334155;
+            padding-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .responses-container {
+            max-height: 400px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            padding-right: 5px;
+        }
+
+        .response-card {
+            background-color: #0f172a;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #38bdf8;
+        }
+
+        .response-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.85rem;
+            color: #94a3b8;
+        }
+
+        .response-user {
+            font-weight: bold;
+            color: #e2e8f0;
+        }
+
+        .response-text {
+            font-size: 0.95rem;
+            color: #f1f5f9;
+            line-height: 1.4;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        
+        <!-- SECCIÓN DE LA PREGUNTA -->
+        <div class="question-section">
+            <h2>❓ ¿Qué se les dificulta del estudio?</h2>
+            <p class="subtitle">Tu respuesta nos ayudará a mejorar. Sé lo más sincero posible.</p>
+        </div>
+
+        <!-- Formulario de envío -->
+        <div id="survey-form">
+            <div class="input-group">
+                <label for="voter-name-input">Nombre o Apodo (Opcional):</label>
+                <input type="text" id="voter-name-input" placeholder="Ej. Anónimo, Juan M.">
+            </div>
+
+            <div class="input-group">
+                <label for="voter-text-input">Escribe tu respuesta aquí:</label>
+                <textarea id="voter-text-input" placeholder="Cuéntanos en detalle qué es lo que más te cuesta (el tiempo, la concentración, alguna materia...)"></textarea>
+            </div>
+            
+            <button class="submit-btn" onclick="submitResponse()">Enviar Respuesta</button>
+        </div>
+
+        <!-- Pantalla de Éxito al enviar -->
+        <div id="thank-you-screen" class="thank-you-screen">
+            <h3>¡Respuesta recibida!</h3>
+            <p>Muchas gracias por compartir tus dificultades con nosotros.</p>
+            <button class="btn-secondary" onclick="showFormScreen()">Enviar otra respuesta</button>
+        </div>
+    </div>
+
+    <!-- Acceso Administrador -->
+    <button class="admin-trigger-btn" onclick="accessAdminPanel()">🔒 Panel de Administrador</button>
+
+    <!-- PANEL DE RESPUESTAS -->
+    <div id="admin-panel" class="admin-panel">
+        <h3>
+            <span>Respuestas Recibidas (<span id="total-responses-count">0</span>)</span>
+            <button onclick="closeAdminPanel()" style="background:none; border:none; color:#ef4444; cursor:pointer; font-size:1rem;">Cerrar</button>
+        </h3>
+        
+        <div id="responses-container" class="responses-container">
+            <!-- Las respuestas se cargarán aquí -->
+        </div>
+
+        <button class="btn-secondary" style="color: #ef4444; border-color: #991b1b; margin-top: 20px; width: 100%;" onclick="clearAllData()">Borrar todas las respuestas</button>
+    </div>
+
+    <script>
+        const ADMIN_PASSWORD = "admin123";
+
+        let surveyData = JSON.parse(localStorage.getItem('surveyData')) || [];
+
+        function submitResponse() {
+            const nameInput = document.getElementById('voter-name-input');
+            const textInput = document.getElementById('voter-text-input');
+
+            const userName = nameInput.value.trim() || "Anónimo";
+            const userText = textInput.value.trim();
+
+            if (userText === "") {
+                alert("Por favor, escribe algo en el cuadro de respuesta antes de enviar.");
+                return;
+            }
+
+            const newResponse = {
+                name: userName,
+                text: userText,
+                date: new Date().toLocaleString()
+            };
+
+            surveyData.push(newResponse);
+            localStorage.setItem('surveyData', JSON.stringify(surveyData));
+
+            nameInput.value = "";
+            textInput.value = "";
+
+            document.getElementById('survey-form').style.display = 'none';
+            document.getElementById('thank-you-screen').style.display = 'block';
+        }
+
+        function showFormScreen() {
+            document.getElementById('thank-you-screen').style.display = 'none';
+            document.getElementById('survey-form').style.display = 'block';
+        }
+
+        function accessAdminPanel() {
+            const passwordEntered = prompt("Introduce la contraseña de administrador para leer las respuestas:");
+            
+            if (passwordEntered === ADMIN_PASSWORD) {
+                updateAdminPanelList();
+                document.getElementById('admin-panel').style.display = 'block';
+                document.getElementById('admin-panel').scrollIntoView({ behavior: 'smooth' });
+            } else if (passwordEntered !== null) {
+                alert("Contraseña incorrecta. Acceso denegado.");
+            }
+        }
+
+        function updateAdminPanelList() {
+            const container = document.getElementById('responses-container');
+            const countContainer = document.getElementById('total-responses-count');
+            
+            container.innerHTML = "";
+            countContainer.innerText = surveyData.length;
+
+            const reversedResponses = [...surveyData].reverse();
+
+            if (reversedResponses.length === 0) {
+                container.innerHTML = "<p style='color:#64748b; text-align:center; padding: 20px;'>Aún no se han recibido respuestas.</p>";
+                return;
+            }
+
+            reversedResponses.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'response-card';
+                card.innerHTML = `
+                    <div class="response-header">
+                        <span class="response-user">👤 Pers: ${item.name}</span>
+                        <span>📅 ${item.date}</span>
+                    </div>
+                    <div class="response-text">${item.text}</div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function closeAdminPanel() {
+            document.getElementById('admin-panel').style.display = 'none';
+        }
+
+        function clearAllData() {
+            if (confirm("¿Estás seguro de que deseas borrar permanentemente TODAS las respuestas leídas?")) {
+                localStorage.removeItem('surveyData');
+                surveyData = [];
+                updateAdminPanelList();
+                alert("Respuestas eliminadas.");
+                closeAdminPanel();
+                showFormScreen();
+            }
+        }
+    </script>
+</body>
+</html>
